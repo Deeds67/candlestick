@@ -51,6 +51,7 @@ dependencies {
   testImplementation("org.http4k:http4k-testing-hamkrest:${DependencyVersions.http4k}")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${DependencyVersions.coroutines}")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${DependencyVersions.coroutines}")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${DependencyVersions.jackson}")
   implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${DependencyVersions.jackson}")
   testImplementation("io.mockk:mockk:${DependencyVersions.mockk}")
@@ -60,4 +61,9 @@ dependencies {
 
 tasks.test {
   useJUnitPlatform()
+
+  testLogging {
+    events(org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED)
+    exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+  }
 }

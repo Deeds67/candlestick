@@ -7,8 +7,11 @@ interface InstrumentManager {
     suspend fun processInstrumentEvent(instrumentEvent: InstrumentEvent)
 }
 
-class InstrumentManagerImpl(instrumentRepository: InstrumentRepository): InstrumentManager {
+class InstrumentManagerImpl(private val instrumentRepository: InstrumentRepository): InstrumentManager {
     override suspend fun processInstrumentEvent(instrumentEvent: InstrumentEvent) {
-        TODO("Not yet implemented")
+        when (instrumentEvent.type) {
+            InstrumentEvent.Type.ADD -> instrumentRepository.createInstrument(instrumentEvent.data)
+            InstrumentEvent.Type.DELETE -> instrumentRepository.deleteInstrument(instrumentEvent.data.isin)
+        }
     }
 }
