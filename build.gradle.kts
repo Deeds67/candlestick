@@ -31,6 +31,7 @@ dependencies {
   implementation("org.http4k:http4k-server-netty")
   implementation("org.http4k:http4k-client-websocket:${DependencyVersions.http4k}")
   implementation("org.http4k:http4k-format-jackson:${DependencyVersions.http4k}")
+  testImplementation("org.http4k:http4k-testing-hamkrest:${DependencyVersions.http4k}")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${DependencyVersions.coroutines}")
   implementation("com.fasterxml.jackson.module:jackson-module-kotlin:${DependencyVersions.jackson}")
