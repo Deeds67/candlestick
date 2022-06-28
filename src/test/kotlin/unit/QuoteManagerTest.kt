@@ -17,6 +17,7 @@ import repositories.InstrumentRepository
 import repositories.QuoteRepository
 import services.QuoteManagerImpl
 import java.math.BigDecimal
+import java.time.Instant
 
 @ExtendWith(MockKExtension::class)
 class QuoteManagerTest {
@@ -33,7 +34,7 @@ class QuoteManagerTest {
         quoteManager.processQuoteEvent(quoteEvent)
 
         verify { mockInstrumentRepository.instrumentExists(quoteEvent.data.isin) }
-        verify { mockQuoteRepository.createQuote(quoteEvent.data) }
+        verify { mockQuoteRepository.createQuote(quoteEvent.data, any()) }
     }
 
     @Test
@@ -49,6 +50,6 @@ class QuoteManagerTest {
         quoteManager.processQuoteEvent(quoteEvent)
 
         verify { mockInstrumentRepository.instrumentExists(quoteEvent.data.isin) }
-        verify(exactly = 0) { mockQuoteRepository.createQuote(quoteEvent.data) }
+        verify(exactly = 0) { mockQuoteRepository.createQuote(quoteEvent.data, any()) }
     }
 }

@@ -7,8 +7,13 @@ class Routes(private val candlestickManager: CandlestickManager) {
     fun getCandlesticks(req: Request): Response {
         val isin = ISIN.create(req.query("isin") ?: return Response(Status.BAD_REQUEST).body("{'reason': 'missing_isin'}"))
 
-        val body = jackson.writeValueAsBytes(candlestickManager.getCandlesticks(isin))
+        val candlesticks = candlestickManager.getCandlesticks(isin)
 
-        return Response(Status.OK).body(body.inputStream())
+        return if (candlesticks.isEmpty()) {
+            Response(Status.NOT_FOUND).body("{'reason': 'no_data_for_isin'}")
+        } else {
+            val body = jackson.writeValueAsBytes(candlesticks)
+            Response(Status.OK).body(body.inputStream())
+        }
     }
 }

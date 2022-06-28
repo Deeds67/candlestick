@@ -1,5 +1,6 @@
 package integration
 
+import Candlestick
 import Instrument
 import Quote
 import com.typesafe.config.ConfigFactory
@@ -10,6 +11,8 @@ import org.junit.jupiter.api.Test
 import repositories.InstrumentRepositoryImpl
 import repositories.QuoteRepositoryImpl
 import java.math.BigDecimal
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -45,7 +48,7 @@ class QuoteRepositoryTest {
             Quote(instrument.isin, BigDecimal("50"))
         )
         quotes.map { q ->
-            assertEquals(1, quoteRepository.createQuote(q))
+            assertEquals(1, quoteRepository.createQuote(q, Instant.now()))
         }
 
         val insertedQuotes = Utils.getAllQuotes().map { it.copy(price = it.price.stripTrailingZeros()) }
@@ -60,7 +63,7 @@ class QuoteRepositoryTest {
     @Test
     fun `ensure quotes are not inserted when corresponding instrument does not exist`() {
         val quote = Quote(ISIN.create("BB3333333333"), BigDecimal("123.12"))
-        assertFails { quoteRepository.createQuote(quote) }
+        assertFails { quoteRepository.createQuote(quote, Instant.now()) }
     }
 
     @Test
@@ -68,10 +71,126 @@ class QuoteRepositoryTest {
         val instrument = createInstrument()
         val quote = Quote(instrument.isin, BigDecimal("123.12"))
 
-        assertEquals(1, quoteRepository.createQuote(quote))
+        assertEquals(1, quoteRepository.createQuote(quote, Instant.now()))
         assertEquals(1, Utils.getAllQuotes().size)
 
         instrumentRepository.deleteInstrument(instrument.isin)
         assertEquals(0, Utils.getAllQuotes().size)
+    }
+
+    @Test
+    fun `ensure candlestick history is returned from the date of the first quote`() {
+        val instrument = createInstrument()
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("5.1234")), Instant.parse("2022-06-28T10:07:00Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("8.1231")), Instant.parse("2022-06-28T10:07:05Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("3.2222")), Instant.parse("2022-06-28T10:07:59Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("7.3454")), Instant.parse("2022-06-28T10:09:05Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("4.1111")), Instant.parse("2022-06-28T10:09:59Z"))
+
+        val from = Instant.parse("2022-06-28T10:00:00Z")
+        val to = from.plusSeconds(60 * 10) // 10 minutes
+
+        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to)
+
+        // Even though we ask for candlesticks from 10:00, we don't have any data until 10:07, so our candlesticks only start at 10:07, giving 4 candlesticks.
+        assertEquals(4, candlesticks.size)
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:07:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:08:00Z"),
+                openPrice = BigDecimal("5.1234"),
+                closingPrice = BigDecimal("3.2222"),
+                lowPrice = BigDecimal("3.2222"),
+                highPrice = BigDecimal("8.1231")
+            ),
+            candlesticks[0]
+        )
+
+        // There is no data between 08 and 09, so we just reuse the closing price from the previous minute for all of the values.
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:08:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:09:00Z"),
+                openPrice = BigDecimal("3.2222"),
+                closingPrice = BigDecimal("3.2222"),
+                lowPrice = BigDecimal("3.2222"),
+                highPrice = BigDecimal("3.2222")
+            ),
+            candlesticks[1]
+        )
+
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:09:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:10:00Z"),
+                openPrice = BigDecimal("7.3454"),
+                closingPrice = BigDecimal("4.1111"),
+                lowPrice = BigDecimal("4.1111"),
+                highPrice = BigDecimal("7.3454")
+            ),
+            candlesticks[2]
+        )
+        // There is no data between 10 and 11, so we just reuse the closing price from the previous minute for all of the values.
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:10:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:11:00Z"),
+                openPrice = BigDecimal("4.1111"),
+                closingPrice = BigDecimal("4.1111"),
+                lowPrice = BigDecimal("4.1111"),
+                highPrice = BigDecimal("4.1111")
+            ),
+            candlesticks[3]
+        )
+    }
+
+    @Test
+    fun `ensure candlestick is backfilled with the newest value if last known data is outside of the query range but within the backfill range`() {
+        val instrument = createInstrument()
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("3.8567")), Instant.parse("2022-06-28T05:00:00Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("1.1234")), Instant.parse("2022-06-28T05:05:00Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("5.1234")), Instant.parse("2022-06-28T10:01:05Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("7.3333")), Instant.parse("2022-06-28T10:01:07Z"))
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("2.3333")), Instant.parse("2022-06-28T10:01:09Z"))
+
+        val from = Instant.parse("2022-06-28T10:00:00Z")
+        val to = from.plusSeconds(60 * 2)
+
+        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to, to.minus(2, ChronoUnit.DAYS))
+
+        assertEquals(3, candlesticks.size)
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:00:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:01:00Z"),
+                openPrice = BigDecimal("1.1234"),
+                closingPrice = BigDecimal("1.1234"),
+                lowPrice = BigDecimal("1.1234"),
+                highPrice = BigDecimal("1.1234")
+            ),
+            candlesticks[0]
+        )
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:01:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:02:00Z"),
+                openPrice = BigDecimal("5.1234"),
+                closingPrice = BigDecimal("2.3333"),
+                lowPrice = BigDecimal("2.3333"),
+                highPrice = BigDecimal("7.3333")
+            ),
+            candlesticks[1]
+        )
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:02:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:03:00Z"),
+                openPrice = BigDecimal("2.3333"),
+                closingPrice = BigDecimal("2.3333"),
+                lowPrice = BigDecimal("2.3333"),
+                highPrice = BigDecimal("2.3333")
+            ),
+            candlesticks[2]
+        )
     }
 }

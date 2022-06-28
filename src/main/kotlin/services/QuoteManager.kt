@@ -3,6 +3,7 @@ package services
 import QuoteEvent
 import repositories.InstrumentRepository
 import repositories.QuoteRepository
+import java.time.Instant
 
 interface QuoteManager {
     fun processQuoteEvent(quoteEvent: QuoteEvent)
@@ -15,7 +16,7 @@ class QuoteManagerImpl(
     override fun processQuoteEvent(quoteEvent: QuoteEvent) {
         val instrumentExists = instrumentRepository.instrumentExists(quoteEvent.data.isin)
         if (instrumentExists) {
-            quoteRepository.createQuote(quoteEvent.data)
+            quoteRepository.createQuote(quoteEvent.data, Instant.now())
         }
     }
 }
