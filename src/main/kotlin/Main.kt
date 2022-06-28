@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import configs.DataSourceConfig
+import org.jetbrains.exposed.sql.Database
 
 fun main() {
   println("starting up")
@@ -13,8 +14,11 @@ fun main() {
   val server = Server()
   val instrumentStream = InstrumentStream()
   val quoteStream = QuoteStream()
+
   val config = ConfigFactory.load()
-  val dataSourceConfig = DataSourceConfig.fromConfig(config)
+  val dataSource = DataSourceConfig.fromConfig(config).toHikariDataSource()
+
+  Database.connect(dataSource)
 
   instrumentStream.connect { event ->
     // TODO - implement

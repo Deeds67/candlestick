@@ -38,6 +38,7 @@ object DependencyVersions {
   const val postgres = "42.3.6"
   const val hikariCP = "4.0.3"
   const val typesafeConfig = "1.4.2"
+  const val exposed = "0.38.2"
 }
 
 dependencies {
@@ -61,6 +62,11 @@ dependencies {
 
   implementation("org.postgresql:postgresql:${DependencyVersions.postgres}")
   implementation("com.zaxxer:HikariCP:${DependencyVersions.hikariCP}")
+
+  implementation("org.jetbrains.exposed:exposed-core:${DependencyVersions.exposed}")
+  implementation("org.jetbrains.exposed:exposed-dao:${DependencyVersions.exposed}")
+  implementation("org.jetbrains.exposed:exposed-jdbc:${DependencyVersions.exposed}")
+  implementation("org.jetbrains.exposed:exposed-java-time:${DependencyVersions.exposed}")
 }
 
 tasks.test {
