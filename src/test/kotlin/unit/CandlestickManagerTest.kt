@@ -10,6 +10,6 @@ class CandlestickManagerTest {
     fun `ensure getCandlesticks returns empty list when called with a non existent ISIN`() {
         val candlestickManager = CandlestickManagerImpl()
 
-        assertEquals(candlestickManager.getCandlesticks("AB9999999999"), listOf())
+        assertEquals(listOf(), candlestickManager.getCandlesticks("AB9999999999"))
     }
 }
