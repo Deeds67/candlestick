@@ -36,12 +36,15 @@ object DependencyVersions {
   const val jackson = "2.13.+"
   const val mockk = "1.12.0"
   const val postgres = "42.3.6"
+  const val hikariCP = "4.0.3"
+  const val typesafeConfig = "1.4.2"
 }
 
 dependencies {
   implementation(kotlin("stdlib"))
   testImplementation(kotlin("test"))
 
+  implementation("com.typesafe:config:${DependencyVersions.typesafeConfig}")
 
   implementation(platform("org.http4k:http4k-bom:4.13.1.0"))
   implementation("org.http4k:http4k-core")
@@ -57,6 +60,7 @@ dependencies {
   testImplementation("io.mockk:mockk:${DependencyVersions.mockk}")
 
   implementation("org.postgresql:postgresql:${DependencyVersions.postgres}")
+  implementation("com.zaxxer:HikariCP:${DependencyVersions.hikariCP}")
 }
 
 tasks.test {
