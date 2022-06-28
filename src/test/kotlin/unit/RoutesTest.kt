@@ -46,7 +46,7 @@ class RoutesTest {
 
         assertThat(
             response,
-            hasStatus(Status.OK).and(hasBody("""[{"open_timestamp":"2022-06-27T17:29:00Z","close_timestamp":"2022-06-27T17:30:00Z","open_price":243.5856,"high_price":243.9369,"low_price":235.1712,"closing_price":235.1712},{"open_timestamp":"2022-06-27T17:30:00Z","close_timestamp":"2022-06-27T17:31:00Z","open_price":243.5856,"high_price":243.9369,"low_price":222.222,"closing_price":222.1122}]"""))
+            hasStatus(Status.OK).and(hasBody("""{"data":[{"open_timestamp":"2022-06-27T17:29:00Z","close_timestamp":"2022-06-27T17:30:00Z","open_price":243.5856,"high_price":243.9369,"low_price":235.1712,"closing_price":235.1712},{"open_timestamp":"2022-06-27T17:30:00Z","close_timestamp":"2022-06-27T17:31:00Z","open_price":243.5856,"high_price":243.9369,"low_price":222.222,"closing_price":222.1122}]}"""))
         )
     }
 
