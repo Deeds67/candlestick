@@ -21,3 +21,5 @@ CREATE TABLE IF NOT EXISTS data.quotes
 
 CREATE INDEX IF NOT EXISTS quotes_isin_created_at_idx
     ON data.quotes (isin, created_at);
+
+SELECT create_hypertable('data.quotes','created_at');

@@ -7,16 +7,15 @@ services:
     - ./:/app
     command: bash -c "cd /app && java -jar partner-service-1.0.1-all.jar --port=8032"
     ports:
-      - 8032:8032
+      - "8032:8032"
   postgres:
     container_name: postgres_container
-    image: postgres
+    image: timescale/timescaledb-ha:pg14-latest
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      PGDATA: /data/postgres
     volumes:
-      - postgres:/data/postgres
+      - postgres:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
