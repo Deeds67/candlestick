@@ -44,7 +44,10 @@ class RoutesTest {
 
         val response = routes.getCandlesticks(Request(Method.GET, "/candlesticks").query("isin", "AB1234567890"))
 
-        assertThat(response, hasStatus(Status.OK).and(hasBody("""[{"open_timestamp":"2022-06-27T17:29:00Z","close_timestamp":"2022-06-27T17:30:00Z","open_price":243.5856,"high_price":243.9369,"low_price":235.1712,"closing_price":235.1712},{"open_timestamp":"2022-06-27T17:30:00Z","close_timestamp":"2022-06-27T17:31:00Z","open_price":243.5856,"high_price":243.9369,"low_price":222.222,"closing_price":222.1122}]""")))
+        assertThat(
+            response,
+            hasStatus(Status.OK).and(hasBody("""[{"open_timestamp":"2022-06-27T17:29:00Z","close_timestamp":"2022-06-27T17:30:00Z","open_price":243.5856,"high_price":243.9369,"low_price":235.1712,"closing_price":235.1712},{"open_timestamp":"2022-06-27T17:30:00Z","close_timestamp":"2022-06-27T17:31:00Z","open_price":243.5856,"high_price":243.9369,"low_price":222.222,"closing_price":222.1122}]"""))
+        )
     }
 
     @Test
@@ -54,5 +57,15 @@ class RoutesTest {
         val response = routes.getCandlesticks(Request(Method.GET, "/candlesticks"))
 
         assertThat(response, hasStatus(Status.BAD_REQUEST).and(hasBody("{'reason': 'missing_isin'}")))
+    }
+
+    @Test
+    fun `ensure GET candlesticks returns 404 if no data is found for this time period`() {
+        val mockCandlestickManager = mockk<CandlestickManager>()
+        every { mockCandlestickManager.getCandlesticks(any()) } returns listOf()
+        val routes = Routes(mockCandlestickManager)
+        val response = routes.getCandlesticks(Request(Method.GET, "/candlesticks").query("isin", "AB1234567890"))
+
+        assertThat(response, hasStatus(Status.NOT_FOUND).and(hasBody("{'reason': 'no_data_for_isin'}")))
     }
 }
