@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package unit
 
 import Quote
@@ -7,7 +9,8 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import repositories.InstrumentRepository
@@ -21,7 +24,7 @@ class QuoteManagerTest {
     fun `ensure quote is inserted if the corresponding instrument exists`(
         @MockK mockInstrumentRepository: InstrumentRepository,
         @RelaxedMockK mockQuoteRepository: QuoteRepository
-    ) = runBlockingTest {
+    ) = runTest {
         val quoteManager = QuoteManagerImpl(mockQuoteRepository, mockInstrumentRepository)
         val quoteEvent = QuoteEvent(Quote("AB1234567890", BigDecimal("100.232")))
 
@@ -37,7 +40,7 @@ class QuoteManagerTest {
     fun `ensure quote is not inserted if corresponding instrument does not exist`(
         @MockK mockInstrumentRepository: InstrumentRepository,
         @RelaxedMockK mockQuoteRepository: QuoteRepository
-    ) = runBlockingTest {
+    ) = runTest {
         val quoteManager = QuoteManagerImpl(mockQuoteRepository, mockInstrumentRepository)
         val quoteEvent = QuoteEvent(Quote("AB1234567890", BigDecimal("100.232")))
 

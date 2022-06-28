@@ -1,13 +1,14 @@
 package integration
 
 import Instrument
+import Quote
 import com.typesafe.config.ConfigFactory
 import configs.DataSourceConfig
 import org.jetbrains.exposed.sql.Database
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import repositories.InstrumentRepositoryImpl
+import java.math.BigDecimal
 import kotlin.test.assertEquals
 
 class InstrumentRepositoryTest {
@@ -21,11 +22,6 @@ class InstrumentRepositoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        Utils.clearDatabase()
-    }
-
-    @AfterAll
-    fun afterAll() {
         Utils.clearDatabase()
     }
 
