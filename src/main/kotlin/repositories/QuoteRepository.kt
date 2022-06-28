@@ -1,5 +1,7 @@
 package repositories
 
+import Candlestick
+import ISIN
 import Quote
 import org.jetbrains.exposed.sql.Table
 import org.jetbrains.exposed.sql.insert
@@ -9,6 +11,7 @@ import java.time.Instant
 
 interface QuoteRepository {
     fun createQuote(quote: Quote): Int
+    fun getCandlesticksBetween(isin: ISIN, from: Instant, to: Instant): List<Candlestick>
 }
 
 object QuoteTable : Table("data.quotes") {
@@ -21,8 +24,12 @@ class QuoteRepositoryImpl: QuoteRepository {
     override fun createQuote(quote: Quote): Int =
         transaction {
             QuoteTable.insert {
-                it[isin] = quote.isin
+                it[isin] = quote.isin.value
                 it[price] = quote.price
             }.insertedCount
         }
+
+    override fun getCandlesticksBetween(isin: ISIN, from: Instant, to: Instant): List<Candlestick> {
+        TODO("Not yet implemented")
+    }
 }

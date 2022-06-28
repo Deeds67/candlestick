@@ -25,21 +25,21 @@ object InstrumentTable : Table("data.instruments") {
 class InstrumentRepositoryImpl: InstrumentRepository {
     override fun createInstrument(instrument: Instrument): Int = transaction {
         InstrumentTable.insertIgnore {
-            it[isin] = instrument.isin
+            it[isin] = instrument.isin.value
             it[description] = instrument.description
         }.insertedCount
     }
 
     override fun deleteInstrument(isin: ISIN): Int = transaction {
         InstrumentTable.deleteWhere {
-            InstrumentTable.isin eq isin
+            InstrumentTable.isin eq isin.value
         }
     }
 
     override fun instrumentExists(isin: ISIN): Boolean =
         transaction {
             InstrumentTable.select {
-                InstrumentTable.isin eq isin
+                InstrumentTable.isin eq isin.value
             }.any()
         }
 

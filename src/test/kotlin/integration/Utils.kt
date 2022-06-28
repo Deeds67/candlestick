@@ -16,7 +16,7 @@ object Utils {
     fun getAllQuotes() = transaction {
         QuoteTable.selectAll().map {
             Quote(
-                isin = it[QuoteTable.isin],
+                isin = ISIN.create(it[QuoteTable.isin]),
                 price = it[QuoteTable.price]
             )
         }

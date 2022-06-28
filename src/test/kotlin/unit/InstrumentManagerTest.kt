@@ -23,7 +23,7 @@ class InstrumentManagerTest {
             val instrumentManager = InstrumentManagerImpl(mockInstrumentRepository)
             val instrumentAddEvent = InstrumentEvent(
                 type = InstrumentEvent.Type.ADD,
-                data = Instrument("AB1234567890", "Fake instrument")
+                data = Instrument(ISIN.create("AB1234567890"), "Fake instrument")
             )
 
             instrumentManager.processInstrumentEvent(instrumentAddEvent)
@@ -37,7 +37,7 @@ class InstrumentManagerTest {
             val instrumentManager = InstrumentManagerImpl(mockInstrumentRepository)
             val instrumentAddEvent = InstrumentEvent(
                 type = InstrumentEvent.Type.DELETE,
-                data = Instrument("AB1234567890", "Fake instrument")
+                data = Instrument(ISIN.create("AB1234567890"), "Fake instrument")
             )
 
             instrumentManager.processInstrumentEvent(instrumentAddEvent)

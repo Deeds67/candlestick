@@ -5,7 +5,7 @@ import services.CandlestickManager
 
 class Routes(private val candlestickManager: CandlestickManager) {
     fun getCandlesticks(req: Request): Response {
-        val isin = req.query("isin") ?: return Response(Status.BAD_REQUEST).body("{'reason': 'missing_isin'}")
+        val isin = ISIN.create(req.query("isin") ?: return Response(Status.BAD_REQUEST).body("{'reason': 'missing_isin'}"))
 
         val body = jackson.writeValueAsBytes(candlestickManager.getCandlesticks(isin))
 

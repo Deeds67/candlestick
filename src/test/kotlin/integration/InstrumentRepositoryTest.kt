@@ -27,7 +27,7 @@ class InstrumentRepositoryTest {
 
     @Test
     fun `ensure CRUD operations on instruments function correctly`() {
-        val instrument = Instrument("AB1111111111", "Test description")
+        val instrument = Instrument(ISIN.create("AB1111111111"), "Test description")
         assertEquals(1, instrumentRepository.createInstrument(instrument))
         assertEquals(0, instrumentRepository.createInstrument(instrument))
 

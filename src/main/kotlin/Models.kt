@@ -1,4 +1,6 @@
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonValue
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -12,7 +14,17 @@ data class InstrumentEvent(val type: Type, val data: Instrument) {
 data class QuoteEvent(val data: Quote)
 
 data class Instrument(val isin: ISIN, val description: String)
-typealias ISIN = String
+
+data class ISIN private constructor(@get:JsonValue val value: String) {
+    companion object {
+        @JvmStatic
+        @JsonCreator
+        fun create(v: String): ISIN {
+            val regex = Regex("""^[A-Z]{2}([A-Z0-9]){9}[0-9]${'$'}""")
+            return if (v matches regex) ISIN(v) else throw Exception("Invalid ISIN: $v")
+        }
+    }
+}
 
 data class Quote(val isin: ISIN, val price: Price)
 typealias Price = BigDecimal

@@ -30,7 +30,7 @@ class QuoteRepositoryTest {
     }
 
     private fun createInstrument(): Instrument {
-        val instrument = Instrument("AB2222222222", "Fake instrument")
+        val instrument = Instrument(ISIN.create("AB2222222222"), "Fake instrument")
         instrumentRepository.createInstrument(instrument)
         return instrument
     }
@@ -59,7 +59,7 @@ class QuoteRepositoryTest {
 
     @Test
     fun `ensure quotes are not inserted when corresponding instrument does not exist`() {
-        val quote = Quote("BB3333333333", BigDecimal("123.12"))
+        val quote = Quote(ISIN.create("BB3333333333"), BigDecimal("123.12"))
         assertFails { quoteRepository.createQuote(quote) }
     }
 
