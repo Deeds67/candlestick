@@ -7,39 +7,49 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import configs.DataSourceConfig
 import org.jetbrains.exposed.sql.Database
-import services.CandlestickManager
-import services.CandlestickManagerImpl
+import repositories.InstrumentRepository
+import repositories.InstrumentRepositoryImpl
+import repositories.QuoteRepository
+import repositories.QuoteRepositoryImpl
+import services.*
 
 fun main() {
-  println("starting up")
+    println("starting up")
 
-  val candlestickManager : CandlestickManager = CandlestickManagerImpl()
-  val routes = Routes(candlestickManager)
-  val server = Server(routes)
-  val instrumentStream = InstrumentStream()
-  val quoteStream = QuoteStream()
+    val instrumentRepository: InstrumentRepository = InstrumentRepositoryImpl()
+    val quoteRepository: QuoteRepository = QuoteRepositoryImpl()
 
-  val config = ConfigFactory.load()
-  val dataSource = DataSourceConfig.fromConfig(config).toHikariDataSource()
+    val candlestickManager: CandlestickManager = CandlestickManagerImpl()
+    val instrumentManager: InstrumentManager = InstrumentManagerImpl(instrumentRepository)
+    val quoteManager: QuoteManager = QuoteManagerImpl(quoteRepository, instrumentRepository)
 
-  Database.connect(dataSource)
+    val routes = Routes(candlestickManager)
+    val server = Server(routes)
 
-  instrumentStream.connect { event ->
-    // TODO - implement
-    println(event)
-  }
+    val instrumentStream = InstrumentStream()
+    val quoteStream = QuoteStream()
 
-  quoteStream.connect { event ->
-    // TODO - implement
-    println(event)
-  }
+    val config = ConfigFactory.load()
+    val dataSource = DataSourceConfig.fromConfig(config).toHikariDataSource()
+
+    Database.connect(dataSource)
+
+    instrumentStream.connect { event ->
+        instrumentManager.processInstrumentEvent(event)
+        println(event)
+    }
+
+    quoteStream.connect { event ->
+        quoteManager.processQuoteEvent(event)
+        println(event)
+    }
 
 
-  server.start()
+    server.start()
 }
 
 val jackson: ObjectMapper =
-  jacksonObjectMapper()
-    .registerModule(JavaTimeModule())
-    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+    jacksonObjectMapper()
+        .registerModule(JavaTimeModule())
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
