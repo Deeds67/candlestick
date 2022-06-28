@@ -7,11 +7,15 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import configs.DataSourceConfig
 import org.jetbrains.exposed.sql.Database
+import services.CandlestickManager
+import services.CandlestickManagerImpl
 
 fun main() {
   println("starting up")
 
-  val server = Server()
+  val candlestickManager : CandlestickManager = CandlestickManagerImpl()
+  val routes = Routes(candlestickManager)
+  val server = Server(routes)
   val instrumentStream = InstrumentStream()
   val quoteStream = QuoteStream()
 
