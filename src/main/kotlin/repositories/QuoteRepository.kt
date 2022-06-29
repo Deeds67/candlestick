@@ -39,8 +39,13 @@ class QuoteRepositoryImpl(private val clock: Clock = Clock.systemUTC()) : QuoteR
             }.insertedCount
         }
 
-    // time_bucket_gapfill = creates time buckets of 1 minute even if there is no row during this bucket: https://docs.timescale.com/api/latest/hyperfunctions/gapfilling-interpolation/time_bucket_gapfill/
-    // locf = last observation carried forward: https://docs.timescale.com/api/latest/hyperfunctions/gapfilling-interpolation/locf/#locf
+    /**
+     * Returns the candlesticks starting at [from] until [to].
+     * In case there are missing candlesticks between [from] and [to], the previous known candlestick's `close_price` will be used.
+     * In case the very first candlestick is missing, [backfillUntil] can be specified to query into the past to find the latest candlestick.
+     * time_bucket_gapfill creates time buckets of 1 minute even if there is no row during this bucket: https://docs.timescale.com/api/latest/hyperfunctions/gapfilling-interpolation/time_bucket_gapfill/
+     * locf = last observation carried forward. If the value is null, it uses the value from the last not null bucket: https://docs.timescale.com/api/latest/hyperfunctions/gapfilling-interpolation/locf/#locf
+     */
     override fun getCandlesticksBetween(
         isin: ISIN,
         from: Instant,
@@ -63,6 +68,10 @@ class QuoteRepositoryImpl(private val clock: Clock = Clock.systemUTC()) : QuoteR
         }.filterNotNull()
     }
 
+    /**
+     * Tries to convert the [rs] to a [Candlestick]. If the resultset does not contain the necessary fields, [null] is returned.
+     * If the [maybeCloseTimestamp] is in the future, the candlestick's [closeTimestamp] is changed to be [Instant.now()]
+     */
     private fun resultSetToMaybeCandlestick(rs: ResultSet): Candlestick? {
         val maybeOpenTimestamp = rs.getTimestamp("bucket")?.toInstant()
         val maybeOpenPrice = rs.getBigDecimal("maybe_open")

@@ -44,7 +44,6 @@ fun main() {
         println(event)
     }
 
-
     server.start()
 }
 

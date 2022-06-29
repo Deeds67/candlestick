@@ -15,13 +15,18 @@ data class QuoteEvent(val data: Quote)
 
 data class Instrument(val isin: ISIN, val description: String)
 
+/**
+ * Value class. Can only be instantiated using [create].
+ * Throws an [IllegalArgumentException] if the regex does not match
+ * TODO: Throw a custom error here and handle it to return a proper json problem to the user.
+ */
 data class ISIN private constructor(@get:JsonValue val value: String) {
     companion object {
         @JvmStatic
         @JsonCreator
         fun create(v: String): ISIN {
             val regex = Regex("""^[A-Z]{2}([A-Z0-9]){9}[0-9]${'$'}""")
-            return if (v matches regex) ISIN(v) else throw Exception("Invalid ISIN: $v")
+            return if (v matches regex) ISIN(v) else throw IllegalArgumentException("Invalid ISIN: $v")
         }
     }
 }
