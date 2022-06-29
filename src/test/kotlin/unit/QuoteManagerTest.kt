@@ -2,6 +2,7 @@
 
 package unit
 
+import Generators.generateISIN
 import Quote
 import QuoteEvent
 import io.mockk.every
@@ -27,7 +28,7 @@ class QuoteManagerTest {
         @RelaxedMockK mockQuoteRepository: QuoteRepository
     ) = runTest {
         val quoteManager = QuoteManagerImpl(mockQuoteRepository, mockInstrumentRepository)
-        val quoteEvent = QuoteEvent(Quote(ISIN.create("AB1234567890"), BigDecimal("100.232")))
+        val quoteEvent = QuoteEvent(Quote(generateISIN(), BigDecimal("100.232")))
 
         every { mockInstrumentRepository.instrumentExists(any()) } returns true
 
@@ -43,7 +44,7 @@ class QuoteManagerTest {
         @RelaxedMockK mockQuoteRepository: QuoteRepository
     ) = runTest {
         val quoteManager = QuoteManagerImpl(mockQuoteRepository, mockInstrumentRepository)
-        val quoteEvent = QuoteEvent(Quote(ISIN.create("AB1234567890"), BigDecimal("100.232")))
+        val quoteEvent = QuoteEvent(Quote(generateISIN(), BigDecimal("100.232")))
 
         every { mockInstrumentRepository.instrumentExists(any()) } returns false
 

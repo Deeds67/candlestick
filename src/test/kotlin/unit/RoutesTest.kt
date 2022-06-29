@@ -1,6 +1,7 @@
 package unit
 
 import Candlestick
+import Generators.generateISIN
 import Routes
 import com.natpryce.hamkrest.assertion.assertThat
 import io.mockk.every
@@ -42,7 +43,7 @@ class RoutesTest {
         every { mockCandlestickManager.getCandlesticks(any()) } returns mockCandlesticks
         val routes = Routes(mockCandlestickManager)
 
-        val response = routes.getCandlesticks(Request(Method.GET, "/candlesticks").query("isin", "AB1234567890"))
+        val response = routes.getCandlesticks(Request(Method.GET, "/candlesticks").query("isin", generateISIN().value))
 
         assertThat(
             response,
@@ -64,7 +65,7 @@ class RoutesTest {
         val mockCandlestickManager = mockk<CandlestickManager>()
         every { mockCandlestickManager.getCandlesticks(any()) } returns listOf()
         val routes = Routes(mockCandlestickManager)
-        val response = routes.getCandlesticks(Request(Method.GET, "/candlesticks").query("isin", "AB1234567890"))
+        val response = routes.getCandlesticks(Request(Method.GET, "/candlesticks").query("isin", generateISIN().value))
 
         assertThat(response, hasStatus(Status.NOT_FOUND).and(hasBody("{'reason': 'no_data_for_isin'}")))
     }

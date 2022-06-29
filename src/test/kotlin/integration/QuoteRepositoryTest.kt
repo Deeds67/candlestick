@@ -1,6 +1,7 @@
 package integration
 
 import Candlestick
+import Generators.generateISIN
 import Instrument
 import Quote
 import com.typesafe.config.ConfigFactory
@@ -20,14 +21,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFails
 
 class QuoteRepositoryTest {
-    private val config = ConfigFactory.load()
-    private val dataSource = DataSourceConfig.fromConfig(config).toHikariDataSource()
     private val quoteRepository = QuoteRepositoryImpl()
     private val instrumentRepository = InstrumentRepositoryImpl()
-
-    init {
-        Database.connect(dataSource)
-    }
 
     @BeforeEach
     fun beforeEach() {
@@ -35,7 +30,7 @@ class QuoteRepositoryTest {
     }
 
     private fun createInstrument(): Instrument {
-        val instrument = Instrument(ISIN.create("AB2222222222"), "Fake instrument")
+        val instrument = Instrument(generateISIN(), "Fake instrument")
         instrumentRepository.createInstrument(instrument)
         return instrument
     }
@@ -64,7 +59,7 @@ class QuoteRepositoryTest {
 
     @Test
     fun `ensure quotes are not inserted when corresponding instrument does not exist`() {
-        val quote = Quote(ISIN.create("BB3333333333"), BigDecimal("123.12"))
+        val quote = Quote(generateISIN(), BigDecimal("123.12"))
         assertFails { quoteRepository.createQuote(quote, Instant.now()) }
     }
 
@@ -226,5 +221,27 @@ class QuoteRepositoryTest {
             ),
             candlesticks[1]
         )
+    }
+
+    @Test
+    fun `ensure that no candlesticks are returned if the queried time period doesnt contain any data`() {
+        val instrument = createInstrument()
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("3.8567")), Instant.parse("2022-06-28T05:00:00Z"))
+        val from = Instant.parse("2022-06-28T10:00:00Z")
+        val to = from.plusSeconds(60 * 3)
+        val backfillUntil = to.minus(2, ChronoUnit.DAYS)
+
+        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to, backfillUntil)
+        assertEquals(0, candlesticks.size)
+    }
+
+    @Test
+    fun `ensure that no candlesticks are returned when the isin does not exist`() {
+        val from = Instant.parse("2022-06-28T10:00:00Z")
+        val to = from.plusSeconds(60 * 3)
+        val backfillUntil = to.minus(2, ChronoUnit.DAYS)
+
+        val candlesticks = quoteRepository.getCandlesticksBetween(ISIN.create("LL1234567890"), from, to, backfillUntil)
+        assertEquals(0, candlesticks.size)
     }
 }

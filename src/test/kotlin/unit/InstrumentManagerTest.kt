@@ -2,6 +2,7 @@
 
 package unit
 
+import Generators.generateISIN
 import Instrument
 import InstrumentEvent
 import io.mockk.impl.annotations.RelaxedMockK
@@ -23,7 +24,7 @@ class InstrumentManagerTest {
             val instrumentManager = InstrumentManagerImpl(mockInstrumentRepository)
             val instrumentAddEvent = InstrumentEvent(
                 type = InstrumentEvent.Type.ADD,
-                data = Instrument(ISIN.create("AB1234567890"), "Fake instrument")
+                data = Instrument(generateISIN(), "Fake instrument")
             )
 
             instrumentManager.processInstrumentEvent(instrumentAddEvent)
@@ -37,7 +38,7 @@ class InstrumentManagerTest {
             val instrumentManager = InstrumentManagerImpl(mockInstrumentRepository)
             val instrumentAddEvent = InstrumentEvent(
                 type = InstrumentEvent.Type.DELETE,
-                data = Instrument(ISIN.create("AB1234567890"), "Fake instrument")
+                data = Instrument(generateISIN(), "Fake instrument")
             )
 
             instrumentManager.processInstrumentEvent(instrumentAddEvent)
