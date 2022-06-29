@@ -31,9 +31,9 @@ typealias Price = BigDecimal
 
 data class Candlestick(
     @JsonProperty("open_timestamp") val openTimestamp: Instant,
-    @JsonProperty("close_timestamp") var closeTimestamp: Instant,
+    @JsonProperty("close_timestamp") val closeTimestamp: Instant,
     @JsonProperty("open_price") val openPrice: Price,
-    @JsonProperty("high_price") var highPrice: Price,
-    @JsonProperty("low_price") var lowPrice: Price,
-    @JsonProperty("closing_price") var closingPrice: Price
+    @JsonProperty("high_price") val highPrice: Price,
+    @JsonProperty("low_price") val lowPrice: Price,
+    @JsonProperty("closing_price") val closingPrice: Price
 )

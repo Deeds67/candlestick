@@ -19,7 +19,7 @@ fun main() {
     val instrumentRepository: InstrumentRepository = InstrumentRepositoryImpl()
     val quoteRepository: QuoteRepository = QuoteRepositoryImpl()
 
-    val candlestickManager: CandlestickManager = CandlestickManagerImpl()
+    val candlestickManager: CandlestickManager = CandlestickManagerImpl(quoteRepository)
     val instrumentManager: InstrumentManager = InstrumentManagerImpl(instrumentRepository)
     val quoteManager: QuoteManager = QuoteManagerImpl(quoteRepository, instrumentRepository)
 

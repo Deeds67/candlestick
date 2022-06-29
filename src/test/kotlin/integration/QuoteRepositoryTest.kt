@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test
 import repositories.InstrumentRepositoryImpl
 import repositories.QuoteRepositoryImpl
 import java.math.BigDecimal
+import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -88,9 +90,10 @@ class QuoteRepositoryTest {
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("4.1111")), Instant.parse("2022-06-28T10:09:59Z"))
 
         val from = Instant.parse("2022-06-28T10:00:00Z")
-        val to = from.plusSeconds(60 * 10) // 10 minutes
+        val to = from.plusSeconds(60 * 11) // 11 minutes
+        val backfillUntil = to.minus(2, ChronoUnit.DAYS)
 
-        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to)
+        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to, backfillUntil)
 
         // Even though we ask for candlesticks from 10:00, we don't have any data until 10:07, so our candlesticks only start at 10:07, giving 4 candlesticks.
         assertEquals(4, candlesticks.size)
@@ -154,9 +157,10 @@ class QuoteRepositoryTest {
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("2.3333")), Instant.parse("2022-06-28T10:01:09Z"))
 
         val from = Instant.parse("2022-06-28T10:00:00Z")
-        val to = from.plusSeconds(60 * 2)
+        val to = from.plusSeconds(60 * 3)
+        val backfillUntil = to.minus(2, ChronoUnit.DAYS)
 
-        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to, to.minus(2, ChronoUnit.DAYS))
+        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to, backfillUntil)
 
         assertEquals(3, candlesticks.size)
         assertEquals(
@@ -191,6 +195,36 @@ class QuoteRepositoryTest {
                 highPrice = BigDecimal("2.3333")
             ),
             candlesticks[2]
+        )
+    }
+
+    @Test
+    fun `ensure the latest candlesticks closing time is not in the future`() {
+        val instrument = createInstrument()
+        // Hardcoding the clock to return 2022-06-28T10:01:45Z when `Instant.now()` is called
+        val fixedClock = Clock.fixed(Instant.parse("2022-06-28T10:01:45Z"), ZoneId.of("UTC"))
+        val quoteRepositoryWithFixedClock = QuoteRepositoryImpl(fixedClock)
+        quoteRepositoryWithFixedClock.createQuote(Quote(instrument.isin, BigDecimal("3.8567")), Instant.parse("2022-06-28T05:00:00Z"))
+        quoteRepositoryWithFixedClock.createQuote(Quote(instrument.isin, BigDecimal("5.1234")), Instant.parse("2022-06-28T10:01:05Z"))
+
+        val from = Instant.parse("2022-06-28T10:00:00Z")
+        val to = from.plusSeconds(60 * 2)
+        val backfillUntil = to.minus(2, ChronoUnit.DAYS)
+
+        val candlesticks = quoteRepositoryWithFixedClock.getCandlesticksBetween(instrument.isin, from, to, backfillUntil)
+
+        assertEquals(2, candlesticks.size)
+
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T10:01:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T10:01:45Z"), // Makes sure that the closing timestamp is not in the future
+                openPrice = BigDecimal("5.1234"),
+                closingPrice = BigDecimal("5.1234"),
+                lowPrice = BigDecimal("5.1234"),
+                highPrice = BigDecimal("5.1234")
+            ),
+            candlesticks[1]
         )
     }
 }

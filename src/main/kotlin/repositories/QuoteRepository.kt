@@ -9,6 +9,7 @@ import org.jetbrains.exposed.sql.javatime.timestamp
 import org.jetbrains.exposed.sql.transactions.transaction
 import repositories.DBUtils.execAndMap
 import java.sql.ResultSet
+import java.time.Clock
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -18,7 +19,7 @@ interface QuoteRepository {
         isin: ISIN,
         from: Instant,
         to: Instant,
-        backfillUntil: Instant = Instant.now().minus(2, ChronoUnit.DAYS)
+        backfillUntil: Instant
     ): List<Candlestick>
 }
 
@@ -28,7 +29,7 @@ object QuoteTable : Table("data.quotes") {
     val created_at = timestamp("created_at")
 }
 
-class QuoteRepositoryImpl : QuoteRepository {
+class QuoteRepositoryImpl(private val clock: Clock = Clock.systemUTC()) : QuoteRepository {
     override fun createQuote(quote: Quote, createdAt: Instant): Int =
         transaction {
             QuoteTable.insert {
@@ -54,7 +55,7 @@ class QuoteRepositoryImpl : QuoteRepository {
                 max(price) as maybe_high,
                 min(price) as maybe_low
             FROM data.quotes q
-            WHERE created_at >= '$from' AND created_at <= '$to'
+            WHERE created_at >= '$from' AND created_at < '$to'
             and isin = '${isin.value}'
             GROUP BY bucket, isin
         """.trimIndent().execAndMap { rs ->
@@ -72,10 +73,12 @@ class QuoteRepositoryImpl : QuoteRepository {
         val maybeClosePrice = rs.getBigDecimal("close")
 
         return if (maybeOpenTimestamp != null && maybeCloseTimestamp != null && maybeClosePrice != null) {
+            val isInFuture = maybeCloseTimestamp.isAfter(Instant.now(clock))
+
             Candlestick(
                 openTimestamp = maybeOpenTimestamp,
                 openPrice = maybeOpenPrice ?: maybeClosePrice,
-                closeTimestamp = maybeCloseTimestamp,
+                closeTimestamp = if (isInFuture) Instant.now(clock) else maybeCloseTimestamp,
                 lowPrice = maybeLowPrice ?: maybeClosePrice,
                 highPrice = maybeHighPrice ?: maybeClosePrice,
                 closingPrice = maybeClosePrice
