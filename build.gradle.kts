@@ -39,6 +39,7 @@ object DependencyVersions {
   const val hikariCP = "4.0.3"
   const val typesafeConfig = "1.4.2"
   const val exposed = "0.38.2"
+  const val flyway = "8.5.13"
 }
 
 dependencies {
@@ -62,6 +63,7 @@ dependencies {
 
   implementation("org.postgresql:postgresql:${DependencyVersions.postgres}")
   implementation("com.zaxxer:HikariCP:${DependencyVersions.hikariCP}")
+  implementation("org.flywaydb:flyway-core:${DependencyVersions.flyway}")
 
   implementation("org.jetbrains.exposed:exposed-core:${DependencyVersions.exposed}")
   implementation("org.jetbrains.exposed:exposed-dao:${DependencyVersions.exposed}")
@@ -77,3 +79,18 @@ tasks.test {
     exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
   }
 }
+
+tasks.withType<Jar> {
+  manifest {
+    attributes["Main-Class"] = "MainKt"
+  }
+
+  val dependencies = configurations
+    .runtimeClasspath
+    .get()
+    .map(::zipTree)
+
+  from(dependencies)
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+

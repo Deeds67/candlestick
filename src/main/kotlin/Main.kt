@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import configs.DataSourceConfig
+import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.sql.Database
 import repositories.InstrumentRepository
 import repositories.InstrumentRepositoryImpl
@@ -30,8 +31,12 @@ fun main() {
     val quoteStream = QuoteStream()
 
     val config = ConfigFactory.load()
-    val dataSource = DataSourceConfig.fromConfig(config).toHikariDataSource()
+    val dataSourceConfig = DataSourceConfig.fromConfig(config)
 
+    val flyway = Flyway.configure().dataSource(dataSourceConfig.url, dataSourceConfig.user, dataSourceConfig.password).load()
+    flyway.migrate()
+
+    val dataSource by lazy{ dataSourceConfig.toHikariDataSource() }
     Database.connect(dataSource)
 
     instrumentStream.connect { event ->

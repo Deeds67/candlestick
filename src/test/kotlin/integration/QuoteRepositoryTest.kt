@@ -4,22 +4,16 @@ import Candlestick
 import Generators.generateAndPopulateRandomInstrumentsWithQuotes
 import Generators.generateISIN
 import Generators.generateInstrument
-import Instrument
 import Quote
-import com.typesafe.config.ConfigFactory
-import configs.DataSourceConfig
-import org.jetbrains.exposed.sql.Database
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import repositories.InstrumentRepositoryImpl
-import repositories.QuoteRepository
 import repositories.QuoteRepositoryImpl
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import kotlin.random.Random
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -30,7 +24,7 @@ class QuoteRepositoryTest {
 
     @BeforeEach
     fun beforeEach() {
-        Utils.clearDatabase()
+        DBUtils.clearDatabase()
     }
 
     @Test
@@ -46,7 +40,7 @@ class QuoteRepositoryTest {
             assertEquals(1, quoteRepository.createQuote(q, Instant.now()))
         }
 
-        val insertedQuotes = Utils.getAllQuotes().map { it.copy(price = it.price.stripTrailingZeros()) }
+        val insertedQuotes = DBUtils.getAllQuotes().map { it.copy(price = it.price.stripTrailingZeros()) }
         assertEquals(3, insertedQuotes.size)
 
         quotes.map { q ->
@@ -67,10 +61,10 @@ class QuoteRepositoryTest {
         val quote = Quote(instrument.isin, BigDecimal("123.12"))
 
         assertEquals(1, quoteRepository.createQuote(quote, Instant.now()))
-        assertEquals(1, Utils.getAllQuotes().size)
+        assertEquals(1, DBUtils.getAllQuotes().size)
 
         instrumentRepository.deleteInstrument(instrument.isin)
-        assertEquals(0, Utils.getAllQuotes().size)
+        assertEquals(0, DBUtils.getAllQuotes().size)
     }
 
     @Test

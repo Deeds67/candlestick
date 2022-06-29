@@ -1,0 +1,3 @@
+FROM gradle:7.2-jdk-alpine
+COPY . .
+ENTRYPOINT ["gradle", "clean", "test"]
