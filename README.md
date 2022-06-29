@@ -18,7 +18,8 @@ make run
 
 * If candlestick information is requested for a time period in which we have no quotes at all, we return 404. We could carry over the last known quote, however in my opinion it makes more sense in this scenario to return 404, since we have no quotes at all matching the time period.
 * When candlestick information is missing, the last known candlestick's `closing_price` is used for all missing candlestick values (open, close, high & low).
-  * If the very first candlestick's information is missing, we query quotes that are outside of the given time period to find the last known `closing_price`. I defaulted this to 2 days, but it's configurable using a `backfillUntil` parameter which specifies how far back we can search to find the last candlestick.
+  * If the very first candlestick's information is missing, we query quotes that are outside of the given time period to find the last known `closing_price`. I defaulted this to 2 days, but it's configurable using a `backfillUntil` parameter which specifies how far back we should search to find the previous candlestick.
+* The latest candlestick's `close_timestamp` will be the current time. Alternatively, `null` could be used to signal that the candlestick is not yet closed, but the existing Candlestick model did not have this field as nullable. 
 
 # Trade Republic Coding Challenge
 
