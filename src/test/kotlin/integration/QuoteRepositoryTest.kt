@@ -1,7 +1,9 @@
 package integration
 
 import Candlestick
+import Generators.generateAndPopulateRandomInstrumentsWithQuotes
 import Generators.generateISIN
+import Generators.generateInstrument
 import Instrument
 import Quote
 import com.typesafe.config.ConfigFactory
@@ -10,12 +12,14 @@ import org.jetbrains.exposed.sql.Database
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import repositories.InstrumentRepositoryImpl
+import repositories.QuoteRepository
 import repositories.QuoteRepositoryImpl
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import kotlin.random.Random
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
@@ -29,15 +33,9 @@ class QuoteRepositoryTest {
         Utils.clearDatabase()
     }
 
-    private fun createInstrument(): Instrument {
-        val instrument = Instrument(generateISIN(), "Fake instrument")
-        instrumentRepository.createInstrument(instrument)
-        return instrument
-    }
-
     @Test
     fun `ensure quotes are correctly inserted when the instrument exists`() {
-        val instrument = createInstrument()
+        val instrument = generateInstrument(instrumentRepository)
 
         val quotes = listOf(
             Quote(instrument.isin, BigDecimal("100.1234")),
@@ -65,7 +63,7 @@ class QuoteRepositoryTest {
 
     @Test
     fun `ensure cascading delete of quotes when instrument is deleted`() {
-        val instrument = createInstrument()
+        val instrument = generateInstrument(instrumentRepository)
         val quote = Quote(instrument.isin, BigDecimal("123.12"))
 
         assertEquals(1, quoteRepository.createQuote(quote, Instant.now()))
@@ -77,7 +75,7 @@ class QuoteRepositoryTest {
 
     @Test
     fun `ensure candlestick history is returned from the date of the first quote`() {
-        val instrument = createInstrument()
+        val instrument = generateInstrument(instrumentRepository)
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("5.1234")), Instant.parse("2022-06-28T10:07:00Z"))
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("8.1231")), Instant.parse("2022-06-28T10:07:05Z"))
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("3.2222")), Instant.parse("2022-06-28T10:07:59Z"))
@@ -144,7 +142,7 @@ class QuoteRepositoryTest {
 
     @Test
     fun `ensure candlestick is backfilled with the newest value if last known data is outside of the query range but within the backfill range`() {
-        val instrument = createInstrument()
+        val instrument = generateInstrument(instrumentRepository)
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("3.8567")), Instant.parse("2022-06-28T05:00:00Z"))
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("1.1234")), Instant.parse("2022-06-28T05:05:00Z"))
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("5.1234")), Instant.parse("2022-06-28T10:01:05Z"))
@@ -195,18 +193,25 @@ class QuoteRepositoryTest {
 
     @Test
     fun `ensure the latest candlesticks closing time is not in the future`() {
-        val instrument = createInstrument()
+        val instrument = generateInstrument(instrumentRepository)
         // Hardcoding the clock to return 2022-06-28T10:01:45Z when `Instant.now()` is called
         val fixedClock = Clock.fixed(Instant.parse("2022-06-28T10:01:45Z"), ZoneId.of("UTC"))
         val quoteRepositoryWithFixedClock = QuoteRepositoryImpl(fixedClock)
-        quoteRepositoryWithFixedClock.createQuote(Quote(instrument.isin, BigDecimal("3.8567")), Instant.parse("2022-06-28T05:00:00Z"))
-        quoteRepositoryWithFixedClock.createQuote(Quote(instrument.isin, BigDecimal("5.1234")), Instant.parse("2022-06-28T10:01:05Z"))
+        quoteRepositoryWithFixedClock.createQuote(
+            Quote(instrument.isin, BigDecimal("3.8567")),
+            Instant.parse("2022-06-28T05:00:00Z")
+        )
+        quoteRepositoryWithFixedClock.createQuote(
+            Quote(instrument.isin, BigDecimal("5.1234")),
+            Instant.parse("2022-06-28T10:01:05Z")
+        )
 
         val from = Instant.parse("2022-06-28T10:00:00Z")
         val to = from.plusSeconds(60 * 2)
         val backfillUntil = to.minus(2, ChronoUnit.DAYS)
 
-        val candlesticks = quoteRepositoryWithFixedClock.getCandlesticksBetween(instrument.isin, from, to, backfillUntil)
+        val candlesticks =
+            quoteRepositoryWithFixedClock.getCandlesticksBetween(instrument.isin, from, to, backfillUntil)
 
         assertEquals(2, candlesticks.size)
 
@@ -224,8 +229,34 @@ class QuoteRepositoryTest {
     }
 
     @Test
+    fun `ensure only the requested candlestick info is returned when there are multiple instruments + quotes`() {
+        // Generate random instrument + quote data
+        generateAndPopulateRandomInstrumentsWithQuotes(quoteRepository, instrumentRepository)
+
+        val instrument = generateInstrument(instrumentRepository)
+        quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("3.8567")), Instant.parse("2022-06-28T05:00:01Z"))
+        val from = Instant.parse("2022-06-28T05:00:00Z")
+        val to = from.plusSeconds(60 * 1)
+        val backfillUntil = to.minus(2, ChronoUnit.DAYS)
+
+        val candlesticks = quoteRepository.getCandlesticksBetween(instrument.isin, from, to, backfillUntil)
+        assertEquals(1, candlesticks.size)
+        assertEquals(
+            Candlestick(
+                openTimestamp = Instant.parse("2022-06-28T05:00:00Z"),
+                closeTimestamp = Instant.parse("2022-06-28T05:01:00Z"),
+                openPrice = BigDecimal("3.8567"),
+                closingPrice = BigDecimal("3.8567"),
+                lowPrice = BigDecimal("3.8567"),
+                highPrice = BigDecimal("3.8567")
+            ),
+            candlesticks[0]
+        )
+    }
+
+    @Test
     fun `ensure that no candlesticks are returned if the queried time period doesnt contain any data`() {
-        val instrument = createInstrument()
+        val instrument = generateInstrument(instrumentRepository)
         quoteRepository.createQuote(Quote(instrument.isin, BigDecimal("3.8567")), Instant.parse("2022-06-28T05:00:00Z"))
         val from = Instant.parse("2022-06-28T10:00:00Z")
         val to = from.plusSeconds(60 * 3)
