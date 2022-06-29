@@ -1,4 +1,20 @@
-# Assumptions
+## Instructions
+
+[There is a Makefile included](Makefile) to make it easier to run the app & tests. 
+Alternatively, the commands are listed inside the [Makefile](Makefile) and can be executed manually as well.
+
+### How to run the tests:
+
+```bash
+make test
+```
+### How to run the app:
+
+```bash
+make run
+```
+
+## Assumptions
 
 * If candlestick information is requested for a time period in which we have no quotes at all, we return 404. We could carry over the last known quote, however in my opinion it makes more sense in this scenario to return 404, since we have no quotes at all matching the time period.
 * When candlestick information is missing, the last known candlestick's `closing_price` is used for all missing candlestick values (open, close, high & low).
