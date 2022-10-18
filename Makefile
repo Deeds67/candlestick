@@ -1,10 +1,5 @@
 test:
-	docker-compose up -d --wait
-	./gradlew flywayMigrate
-	./gradlew clean test
-	docker compose down
+	docker-compose up postgres tests
 
 run:
-	docker-compose up -d --wait
-	./gradlew flywayMigrate
-	./gradlew run
+	docker-compose up java postgres candlesticks

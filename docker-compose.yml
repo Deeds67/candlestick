@@ -26,6 +26,35 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+  candlesticks:
+    depends_on:
+      - postgres
+      - java
+    container_name: candlesticks
+    restart: on-failure
+    build: .
+    ports:
+      - "8080:8080"
+#    networks:
+#      - postgres
+    network_mode: host
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_HOST: ${DATABASE_HOST:-localhost}
+  tests:
+    depends_on:
+      - postgres
+    container_name: tests
+    network_mode: host
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_HOST: ${DATABASE_HOST:-localhost}
+    build:
+      context: .
+      dockerfile: ./src/test/Dockerfile-tests
 
 networks:
   postgres:
