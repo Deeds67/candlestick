@@ -21,7 +21,7 @@ make run
   * If the very first candlestick's information is missing, we query quotes that are outside of the given time period to find the last known `closing_price`. I defaulted this to 2 days, but it's configurable using a `backfillUntil` parameter which specifies how far back we should search to find the previous candlestick.
 * The latest candlestick's `close_timestamp` will be the current time. Alternatively, `null` could be used to signal that the candlestick is not yet closed, but the existing Candlestick model did not have this field as nullable. 
 
-# Trade Republic Coding Challenge
+# Candlestick Challenge
 
 Your task is to build a system that enables users to view price histories. 
 It will receive updates from a partner service, transform these updates and provide the aggregated data through an endpoint.
